@@ -8,55 +8,68 @@ public class Main {
     public static void main(String[] args) {
         RepositorioSalas salas = new RepositorioSalasMemoria();
         RepositorioReservasMemoria reservas = new RepositorioReservasMemoria();
-        ReservaFacade fachada = new ReservaFacade(salas, reservas,
-            List.of(new NotificadorEstudiante()));
 
-        // Reserva armada a mano para ver el estado inicial (Pendiente)
-        Reserva reserva = new ReservaBuilder()
-            .estudiante(new Estudiante("E001", "Laura"))
-            .fecha(LocalDate.now().plusDays(7))
-            .horaInicio(LocalTime.of(14, 0))
-            .duracionHoras(2)
-            .cantidadPersonas(4)
-            .sala(new Sala("B", "Sala B", 4))
-            .build();
-        reserva.agregarObservador(new NotificadorEstudiante());
+        List<ObservadorReserva> observadores = List.of(
+            new NotificadorEstudiante(),
+            new RegistroEventos()
+        );
 
-        System.out.println("Estado inicial: " + reserva.getNombreEstado());
+        ReservaFacade fachada = new ReservaFacade(salas, reservas, observadores);
 
-        System.out.println("\n1) Confirmar una reserva pendiente");
-        reserva.confirmar();
-        System.out.println("Estado: " + reserva.getNombreEstado());
+        Estudiante laura = new Estudiante("E001", "Laura");
 
-        System.out.println("\n2) Cancelar una reserva confirmada");
+        System.out.println("=== ESCENARIO PRINCIPAL ===");
+        Reserva reserva = fachada.realizarReserva(
+            laura,
+            LocalDate.now().plusDays(7),
+            LocalTime.of(14, 0),
+            2,
+            4,
+            new SeleccionPorCapacidad()
+        ).orElseThrow();
+
+        System.out.println(reserva);
+        System.out.println("\nLaura cancela la reserva:");
         reserva.cancelar();
-        System.out.println("Estado: " + reserva.getNombreEstado());
+        System.out.println(reserva);
 
-        System.out.println("\n3) Intentar confirmar una reserva cancelada");
+        System.out.println("\nIntento inválido: confirmar una reserva cancelada.");
         try {
             reserva.confirmar();
         } catch (IllegalStateException ex) {
-            System.out.println("Rechazado: " + ex.getMessage());
+            System.out.println("Operación rechazada: " + ex.getMessage());
         }
-        System.out.println("Estado: " + reserva.getNombreEstado());
 
-        // Otra reserva (por la fachada, queda confirmada)
-        Reserva otra = fachada.realizarReserva(
+        System.out.println("\n=== PRUEBA DE SALA PREFERIDA ===");
+        fachada.realizarReserva(
             new Estudiante("E002", "Andrés"),
             LocalDate.now().plusDays(8),
-            LocalTime.of(10, 0), 2, 4, new SeleccionPorCapacidad()
+            LocalTime.of(10, 0),
+            2,
+            4,
+            new SeleccionSalaPreferida("C")
+        ).ifPresent(System.out::println);
+
+        System.out.println("\n=== PRUEBA SIN SALA ADECUADA ===");
+        fachada.realizarReserva(
+            new Estudiante("E003", "Camila"),
+            LocalDate.now().plusDays(9),
+            LocalTime.of(9, 0),
+            2,
+            10,
+            new SeleccionPorCapacidad()
+        );
+
+        System.out.println("\n=== PRUEBA DE FINALIZACIÓN ===");
+        Reserva otra = fachada.realizarReserva(
+            new Estudiante("E004", "Samuel"),
+            LocalDate.now().plusDays(10),
+            LocalTime.of(11, 0),
+            1,
+            2,
+            new SeleccionPorCapacidad()
         ).orElseThrow();
-
-        System.out.println("\n4) Finalizar otra reserva confirmada");
         otra.finalizar();
-        System.out.println("Estado: " + otra.getNombreEstado());
-
-        System.out.println("\n5) Intentar cancelar una reserva finalizada");
-        try {
-            otra.cancelar();
-        } catch (IllegalStateException ex) {
-            System.out.println("Rechazado: " + ex.getMessage());
-        }
-        System.out.println("Estado: " + otra.getNombreEstado());
+        System.out.println(otra);
     }
 }
