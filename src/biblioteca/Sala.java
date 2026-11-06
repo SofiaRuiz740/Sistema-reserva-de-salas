@@ -7,7 +7,7 @@ public class Sala {
 
     public Sala(String codigo,String nombre,int capacidad){
         if(codigo ==null || codigo.isBlank() || nombre == null || nombre.isBlank() || capacidad <= 0){
-            throw new IllegalArgumentException("Datos de sala invalidos.");
+            throw new IllegalArgumentException("Datos de sala inválidos.");
         }
         this.codigo = codigo;
         this.nombre = nombre;
@@ -19,7 +19,7 @@ public class Sala {
 
     @Override 
     public String toString(){
-        return nombre + "(" + codigo +", capacidad: " + capacidad + ")";
+        return nombre + " (" + codigo + ", capacidad: " + capacidad + ")";
     }
 }
 
